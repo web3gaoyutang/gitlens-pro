@@ -1,8 +1,3 @@
-# 编译输出
-/bin
-/activate
-/activate.exe
-/activate_mac
 
 # 备份文件
 *.backup
