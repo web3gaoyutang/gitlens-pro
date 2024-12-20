@@ -23,7 +23,9 @@
 
 ### Windows 用户
 
-直接运行 `activate.exe` 即可。
+```
+activate.exe --ext-dir "%USERPROFILE%\.cursor"
+```
 
 ### macOS 用户
 
