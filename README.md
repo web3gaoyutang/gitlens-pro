@@ -8,24 +8,21 @@
 
 推荐使用 15.1.0 版本的 GitLens, 
 
-如果是 16.0.5， 必须登录, 这是必须的步骤, 注册随便用个邮箱就行, 不登陆没法触发
+必须登录, 这是必须的步骤, 注册随便用个邮箱就行, 不登陆没法触发
 
 ## 使用方法
 
-### 指定扩展目录
+运行之后会有相关提示，根据提示操作即可
 
-默认使用 ~/.vscode 目录
+![image](./screen/企业微信截图_20241220130237.png)
 
-1. 通过命令行参数：
-
-```bash
-./activate --ext-dir .cursor
-```
+效果
+![image](./screen/企业微信截图_20241220130552.png)
 
 
 ### Windows 用户
 
-cmd 执行
+双击运行
 ```
 activate.exe 
 ```
@@ -35,7 +32,9 @@ activate.exe
 直接运行 `activate_mac` 即可。
 
 ```bash
-./activate_mac
+./activate_mac_amd64
+
+./activate_mac_arm64
 ```
 
 ### Linux 用户
