@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -13,12 +15,40 @@ const (
 	insertCode = `e={user:{id:"88888888-8888-8888-8888-888888888888",name:"Neo",email:"x@x.com",status:"activated",createdDate:"2000-01-01T00:00:00.000Z"},licenses:{paidLicenses:{},effectiveLicenses:{"gitlens-pro":{organizationId:"Linux",latestStatus:"active",latestStartDate:"2024-01-01",latestEndDate:"2999-01-01",reactivationCount:99,nextOptInDate:"2999-01-01"}}},nextOptInDate:"2999-01-01"};`
 )
 
-var defaultExtDir = ".vscode"
+type ExtensionPath struct {
+	Name        string
+	Path        string
+	Description string
+}
+
+// 预设的 VSCode 扩展目录
+var predefinedPaths = []ExtensionPath{
+	{
+		Name:        "VSCode",
+		Path:        filepath.Join(".vscode", "extensions"),
+		Description: "标准 VSCode",
+	},
+	{
+		Name:        "Cursor",
+		Path:        filepath.Join(".cursor", "extensions"),
+		Description: "Cursor 编辑器",
+	},
+	{
+		Name:        "VSCode Insiders",
+		Path:        filepath.Join(".vscode-insiders", "extensions"),
+		Description: "VSCode 预览版",
+	},
+	{
+		Name:        "Windsurf",
+		Path:        filepath.Join(".windsurf", "extensions"),
+		Description: "Windsurf 编辑器",
+	},
+}
 
 func getExtensionsDir() string {
 	// 优先使用命令行参数
 	if len(os.Args) > 2 && os.Args[1] == "--ext-dir" {
-		defaultExtDir = os.Args[2]
+		return os.Args[2]
 	}
 
 	// 其次使用环境变量
@@ -26,27 +56,50 @@ func getExtensionsDir() string {
 		return envDir
 	}
 
-	// 最后使用默认值
+	// 获取用户主目录
 	home, err := os.UserHomeDir()
-
-	fmt.Println(home, defaultExtDir)
 	if err != nil {
-		return defaultExtDir
+		fmt.Println("警告: 无法获取用户主目录")
+		home = "."
 	}
-	return filepath.Join(home, defaultExtDir)
+
+	// 显示预设选项
+	fmt.Println("\n请选择 VSCode 扩展目录:")
+	for i, path := range predefinedPaths {
+		fullPath := filepath.Join(home, path.Path)
+		fmt.Printf("[%d] %s (%s)\n    路径: %s\n", i+1, path.Name, path.Description, fullPath)
+	}
+	fmt.Printf("[%d] 自定义路径\n", len(predefinedPaths)+1)
+
+	// 获取用户选择
+	choice := promptForSelection(len(predefinedPaths) + 1)
+
+	// 如果选择自定义路径
+	if choice == len(predefinedPaths)+1 {
+		fmt.Print("\n请输入自定义扩展目录路径: ")
+		reader := bufio.NewReader(os.Stdin)
+		customPath, _ := reader.ReadString('\n')
+		return strings.TrimSpace(customPath)
+	}
+
+	// 返回选择的预设路径
+	selectedPath := predefinedPaths[choice-1]
+	return filepath.Join(home, selectedPath.Path)
 }
 
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "restore" {
 		if err := Restore(); err != nil {
 			fmt.Printf("恢复失败: %v\n", err)
+			waitForKeyPress()
 			return
 		}
 		fmt.Println("恢复完成! 请重启 VS Code。")
+		waitForKeyPress()
 		return
 	}
 	// 获取扩展目录
-	extensionsDir := filepath.Join(getExtensionsDir(), "extensions")
+	extensionsDir := getExtensionsDir()
 
 	fmt.Println(extensionsDir)
 
@@ -54,6 +107,7 @@ func main() {
 	extensionPath, err := getLatestGitLensPath(extensionsDir)
 	if err != nil {
 		fmt.Printf("查找 GitLens 扩展失败: %v\n", err)
+		waitForKeyPress()
 		return
 	}
 
@@ -72,6 +126,14 @@ func main() {
 	}
 
 	fmt.Println("\n激活完成! 请重启 VS Code 以使更改生效。")
+	waitForKeyPress()
+}
+
+// 等待用户按键
+func waitForKeyPress() {
+	fmt.Print("\n按回车键退出...")
+	reader := bufio.NewReader(os.Stdin)
+	reader.ReadString('\n')
 }
 
 func getLatestGitLensPath(extensionsDir string) (string, error) {
@@ -95,7 +157,36 @@ func getLatestGitLensPath(extensionsDir string) (string, error) {
 
 	// 按版本号排序
 	sort.Sort(sort.Reverse(sort.StringSlice(gitLensDirs)))
-	return filepath.Join(extensionsDir, gitLensDirs[0]), nil
+
+	// 如果只有一个版本，直接返回
+	if len(gitLensDirs) == 1 {
+		return filepath.Join(extensionsDir, gitLensDirs[0]), nil
+	}
+
+	// 显示可用版本供用户选择
+	fmt.Println("\n发现多个 GitLens 版本:")
+	for i, dir := range gitLensDirs {
+		fmt.Printf("[%d] %s\n", i+1, dir)
+	}
+
+	selectedVersion := promptForSelection(len(gitLensDirs))
+	return filepath.Join(extensionsDir, gitLensDirs[selectedVersion-1]), nil
+}
+
+// 提示用户选择版本
+func promptForSelection(maxChoice int) int {
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		fmt.Print("\n请选择要激活的 GitLens 版本 (输入数字): ")
+		input, _ := reader.ReadString('\n')
+		input = strings.TrimSpace(input)
+
+		choice, err := strconv.Atoi(input)
+		if err == nil && choice > 0 && choice <= maxChoice {
+			return choice
+		}
+		fmt.Printf("无效的选择，请输入 1 到 %d 之间的数字\n", maxChoice)
+	}
 }
 
 // 添加版本检测函数
