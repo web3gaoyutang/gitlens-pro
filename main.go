@@ -37,14 +37,14 @@ func getExtensionsDir() string {
 }
 
 func main() {
-	// if len(os.Args) > 1 && os.Args[1] == "restore" {
-	// 	if err := Restore(); err != nil {
-	// 		fmt.Printf("恢复失败: %v\n", err)
-	// 		return
-	// 	}
-	// 	fmt.Println("恢复完成! 请重启 VS Code。")
-	// 	return
-	// }
+	if len(os.Args) > 1 && os.Args[1] == "restore" {
+		if err := Restore(); err != nil {
+			fmt.Printf("恢复失败: %v\n", err)
+			return
+		}
+		fmt.Println("恢复完成! 请重启 VS Code。")
+		return
+	}
 	// 获取扩展目录
 	extensionsDir := filepath.Join(getExtensionsDir(), "extensions")
 
