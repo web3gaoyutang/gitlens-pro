@@ -10,14 +10,15 @@ import (
 )
 
 const (
-	insertCode    = `e={user:{id:"88888888-8888-8888-8888-888888888888",name:"Neo",email:"x@x.com",status:"activated",createdDate:"2000-01-01T00:00:00.000Z"},licenses:{paidLicenses:{},effectiveLicenses:{"gitlens-pro":{organizationId:"Linux",latestStatus:"active",latestStartDate:"2024-01-01",latestEndDate:"2999-01-01",reactivationCount:99,nextOptInDate:"2999-01-01"}}},nextOptInDate:"2999-01-01"};`
-	defaultExtDir = ".vscode"
+	insertCode = `e={user:{id:"88888888-8888-8888-8888-888888888888",name:"Neo",email:"x@x.com",status:"activated",createdDate:"2000-01-01T00:00:00.000Z"},licenses:{paidLicenses:{},effectiveLicenses:{"gitlens-pro":{organizationId:"Linux",latestStatus:"active",latestStartDate:"2024-01-01",latestEndDate:"2999-01-01",reactivationCount:99,nextOptInDate:"2999-01-01"}}},nextOptInDate:"2999-01-01"};`
 )
+
+var defaultExtDir = ".vscode"
 
 func getExtensionsDir() string {
 	// 优先使用命令行参数
 	if len(os.Args) > 2 && os.Args[1] == "--ext-dir" {
-		return os.Args[2]
+		defaultExtDir = os.Args[2]
 	}
 
 	// 其次使用环境变量
@@ -27,6 +28,8 @@ func getExtensionsDir() string {
 
 	// 最后使用默认值
 	home, err := os.UserHomeDir()
+
+	fmt.Println(home, defaultExtDir)
 	if err != nil {
 		return defaultExtDir
 	}
@@ -34,16 +37,18 @@ func getExtensionsDir() string {
 }
 
 func main() {
-	if len(os.Args) > 1 && os.Args[1] == "restore" {
-		if err := Restore(); err != nil {
-			fmt.Printf("恢复失败: %v\n", err)
-			return
-		}
-		fmt.Println("恢复完成! 请重启 VS Code。")
-		return
-	}
+	// if len(os.Args) > 1 && os.Args[1] == "restore" {
+	// 	if err := Restore(); err != nil {
+	// 		fmt.Printf("恢复失败: %v\n", err)
+	// 		return
+	// 	}
+	// 	fmt.Println("恢复完成! 请重启 VS Code。")
+	// 	return
+	// }
 	// 获取扩展目录
 	extensionsDir := filepath.Join(getExtensionsDir(), "extensions")
+
+	fmt.Println(extensionsDir)
 
 	// 获取最新版本的 GitLens 目录
 	extensionPath, err := getLatestGitLensPath(extensionsDir)
@@ -93,6 +98,13 @@ func getLatestGitLensPath(extensionsDir string) (string, error) {
 	return filepath.Join(extensionsDir, gitLensDirs[0]), nil
 }
 
+// 添加版本检测函数
+func isVersion15(dirName string) bool {
+	pattern := regexp.MustCompile(`^eamodio\.gitlens-15\.\d+\.\d+$`)
+	return pattern.MatchString(dirName)
+}
+
+// 修改 processFile 函数
 func processFile(filePath string) error {
 	// 检查文件是否存在
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
@@ -114,6 +126,49 @@ func processFile(filePath string) error {
 		fmt.Printf("已创建备份: %s\n", backupPath)
 	}
 
+	// 获取目录名以检查版本
+	dirName := filepath.Base(filepath.Dir(filepath.Dir(filePath)))
+	if isVersion15(dirName) {
+		return processVersion15File(filePath, content)
+	}
+	return processVersion16File(filePath, content)
+}
+
+// 处理 15.x 版本的文件
+func processVersion15File(filePath string, content []byte) error {
+	contentStr := string(content)
+
+	// 替换模式
+	replacements := map[string]string{
+		"qn.CommunityWithAccount": "qn.Enterprise",
+		"qn.Community":            "qn.Enterprise",
+		"qn.Pro":                  "qn.Enterprise",
+	}
+
+	modified := false
+	for old, new := range replacements {
+		if strings.Contains(contentStr, old) {
+			contentStr = strings.ReplaceAll(contentStr, old, new)
+			modified = true
+			fmt.Printf("替换 %s 为 %s\n", old, new)
+		}
+	}
+
+	if !modified {
+		return fmt.Errorf("未找到需要替换的内容")
+	}
+
+	// 写入修改后的内容
+	if err := os.WriteFile(filePath, []byte(contentStr), 0644); err != nil {
+		return fmt.Errorf("写入文件失败: %v", err)
+	}
+
+	fmt.Printf("成功修改文件: %s\n", filePath)
+	return nil
+}
+
+// 处理 16.x 版本的文件
+func processVersion16File(filePath string, content []byte) error {
 	// 查找匹配模式
 	pattern := regexp.MustCompile(`let ([a-zA-Z])={id:e\.user\.id,name:`)
 	matches := pattern.FindStringSubmatch(string(content))
@@ -130,7 +185,7 @@ func processFile(filePath string) error {
 
 	// 写入修改后的内容
 	if err := os.WriteFile(filePath, []byte(newContent), 0644); err != nil {
-		return fmt.Errorf("写入文件��败: %v", err)
+		return fmt.Errorf("写入文件失败: %v", err)
 	}
 
 	fmt.Printf("成功修改文件: %s\n", filePath)
