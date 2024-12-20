@@ -32,9 +32,7 @@ activate.exe
 直接运行 `activate_mac` 即可。
 
 ```bash
-./activate_mac_amd64
-
-./activate_mac_arm64
+chmod +x activate_mac_arm64 && ./activate_mac_arm64
 ```
 
 ### Linux 用户
