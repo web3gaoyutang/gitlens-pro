@@ -42,3 +42,8 @@ chmod +x activate_mac_arm64 && ./activate_mac_arm64
 ```bash
 ./activate
 ```
+
+## 请我喝杯茶
+![image](https://github.com/user-attachments/assets/f3430ba5-6b9d-44f7-a89a-81921d1b3d64)
+
+
