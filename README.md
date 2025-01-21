@@ -20,6 +20,8 @@
 ![image](./screen/企业微信截图_20241220130552.png)
 
 
+
+
 ### Windows 用户
 
 双击运行
@@ -42,6 +44,11 @@ chmod +x activate_mac_arm64 && ./activate_mac_arm64
 ```bash
 ./activate
 ```
+
+## 如果是高版本的gitlens，执行之后需要点击刷新按钮
+
+![image](https://github.com/user-attachments/assets/37e03358-bff2-495d-aa76-ea7442c21110)
+
 
 ## 请我喝杯茶
 ![image](https://github.com/user-attachments/assets/f3430ba5-6b9d-44f7-a89a-81921d1b3d64)
