@@ -143,7 +143,7 @@ func getLatestGitLensPath(extensionsDir string) (string, error) {
 	}
 
 	var gitLensDirs []string
-	pattern := regexp.MustCompile(`^eamodio\.gitlens-\d+\.\d+\.\d+$`)
+	pattern := regexp.MustCompile(`^eamodio\.gitlens-\d+\.\d+\.\d+(-[A-Za-z0-9._-]+)?$`)
 
 	for _, entry := range entries {
 		if entry.IsDir() && pattern.MatchString(entry.Name()) {
